@@ -1,4 +1,4 @@
-#define LEDPIN 13
+#define LEDPIN 13 // Информационный пин ленты
 #define NUMLEDS 32 // Количество светодиодов
 
 #define Modes 4 // Количество дополнительных режимов
@@ -8,21 +8,22 @@
 #define FireMode 3 // Четвёртый режим
 #include <microLED.h>
 #include <FastLEDsupport.h>
-microLED<NUMLEDS, LEDPIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip;
+microLED<NUMLEDS, LEDPIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip; // Инициализация ленты
 #include <EncButton.h>
-EncButton encoder(2, 3, 4);
+EncButton encoder(2, 3, 4); // Инициализация энкодера
 
-int temp = 3500;
+int temp = 3500; // Цветовая температура
 unsigned char mode = 0; // Режим
 unsigned char brightness = 100;
 unsigned char color = 0;
 unsigned char color2 = 0;
-bool ColorOrBrightness = 0;
-bool OnOff = 0;
+bool ColorOrBrightness = 0; // Выбор цвета или яркости
+bool OnOff = 0; // Вкл/Выкл ленту
 bool levelOfModes = 3; // Уровень режимов
-bool GradColorNum = 0;
-bool modeSelect = 0;
+bool GradColorNum = 0; // Изменение разных цветов градиента
+bool modeSelect = 0; // Меню выбора режима
 
+// Статичный цвет
 void StaticColor(unsigned char color = 0) {
   strip.fill(mWheel8(color));
   strip.show();
@@ -39,8 +40,8 @@ void Temperature(int temp = 3500) {
 
 // Градиент
 void Gradient(unsigned char color1, unsigned char color2) {
-  strip.fillGradient(0, NUMLEDS/2, mWheel8(color1), mWheel8(color2));
-  strip.fillGradient(NUMLEDS/2, NUMLEDS, mWheel8(color2), mWheel8(color1));
+  strip.fillGradient(0, NUMLEDS/2, mWheel8(color1), mWheel8(color2)); // Заливка первого ряда ленты
+  strip.fillGradient(NUMLEDS/2, NUMLEDS, mWheel8(color2), mWheel8(color1)); // Заливка второго ряда ленты
   strip.show();
   Serial.println(color1);
   Serial.print('\t');
@@ -52,20 +53,21 @@ void Gradient(unsigned char color1, unsigned char color2) {
 int count = 0;
 void Fire() {
   strip.setBrightness(brightness);
-  mGradient<4> myGrad;
+  mGradient<4> myGrad; // Палитра градиента из 4 точек
   myGrad.colors[0] = mBlack;
   myGrad.colors[1] = mRed;
   myGrad.colors[2] = mYellow;
   myGrad.colors[3] = mWhite;
 
   for (int i = 0; i < NUMLEDS; i++) {
-    strip.leds[i] = myGrad.get(inoise8(i * 50, count), 255);
+    strip.leds[i] = myGrad.get(inoise8(i * 50, count), 255); // Случайный градиент
   }
-  count += 20;
+  count += 20; // Смещение
   strip.show();
   delay(40);
 }
 
+// Смена уровня яркости
 void SetBrightness(unsigned char *brightness) {
   if (encoder.turn()) {
     if (encoder.pressing()) {
@@ -75,6 +77,7 @@ void SetBrightness(unsigned char *brightness) {
       *brightness += 5 * encoder.dir();
     }
 
+    // Ограничение диапазона
     if (*brightness >= 255) {
       *brightness = 250;
     }
@@ -83,10 +86,11 @@ void SetBrightness(unsigned char *brightness) {
     }
   }
 
-  strip.setBrightness(*brightness);
+  strip.setBrightness(*brightness); // Применение выбранной яркости
   Serial.println("brightness = " + *brightness);
 }
 
+// Смена цвета
 void SetColor(unsigned char *color, int speed = 1) {
   if (encoder.turn()) {
     if (encoder.pressing()) {
@@ -96,6 +100,7 @@ void SetColor(unsigned char *color, int speed = 1) {
       *color += 5 * encoder.dir();
     }
 
+    // Ограничение диапазона
     if (*color > 255) {
       *color = 0;
     }
@@ -107,10 +112,32 @@ void SetColor(unsigned char *color, int speed = 1) {
   Serial.println(*color);
 }
 
+// Смена температуры
+void SetTemperature(int *temp) {
+  if (encoder.turn()) {
+    if (encoder.pressing()) {
+      *temp += 50 * encoder.dir(); // Медленное пролистывание
+    }
+    else {
+      *temp += 200 * encoder.dir();
+    }
+
+    // Ограничение диапазона
+    if (*temp > 7000) {
+      *temp = 7000;
+    }
+    if (*temp < 0) {
+      *temp = 0;
+    }
+  }
+}
+
+// Меню выбора режимов
 void ModeSelect(unsigned char *mode) {
   if (encoder.turn()){
     *mode += encoder.dir();
 
+    // Ограничение диапазона
     if (*mode >= Modes){
       *mode = 0;
     }
@@ -119,6 +146,7 @@ void ModeSelect(unsigned char *mode) {
     }
   }
 
+  // Отображение выбранного режима
   strip.fill((NUMLEDS/Modes) * *mode, (NUMLEDS/Modes) * (*mode + 1) - 1, mWheel8(50 * *mode));
   strip.show();
   delay(10);
@@ -138,7 +166,7 @@ void Signal(enum COLORS color = mWhite) {
   delay(1);
 }
 
-// Отключение ленты
+// Очистка ленты
 void Clear() {
   strip.fill(mBlack);
   strip.show();
@@ -150,17 +178,16 @@ void setup() {
   encoder.setEncType(EB_STEP4_LOW); // Тип энкодера
   Serial.begin(115200);
   pinMode(5, 2);
-  pinMode(6, 2);
   Clear();
 }
 
 void loop() {
-  encoder.tick();
-  if (OnOff) {
-    if (modeSelect) {
+  encoder.tick(); // Обработка энокдера
+  if (OnOff) { // Проверка включения ленты
+    if (modeSelect) { // Меню выбора режимов
       ModeSelect(&mode);
     }
-    else if (mode == StaticMode) {
+    else if (mode == StaticMode) { // Статичный цвет
       if (!ColorOrBrightness) {
         SetColor(&color);
       }
@@ -170,21 +197,9 @@ void loop() {
 
       StaticColor(color);
     }
-    else if (mode == TemperatureMode) {
+    else if (mode == TemperatureMode) { // Холодный/Тёплый свет
       if (!ColorOrBrightness) {
-        if (encoder.turn()){
-          if (encoder.pressing()) {
-            temp += 50 * encoder.dir(); // Медленное пролистывание
-          }
-          else {temp += 200 * encoder.dir();}
-
-          if (temp > 7000) {
-            temp = 7000;
-          }
-          if (temp < 0) {
-            temp = 0;
-          }
-        }
+        SetTemperature(&temp);
       }
       else {
         SetBrightness(&brightness);
@@ -192,13 +207,13 @@ void loop() {
 
       Temperature(temp);
     }
-    else if (mode == GradientMode) {
+    else if (mode == GradientMode) { // Градиент
       if (!ColorOrBrightness) {
         if (encoder.pressing()) {
-          SetColor(&color2, 5);
+          SetColor(&color2, 5); // Выбор первого цвета
         }
         else {
-          SetColor(&color);
+          SetColor(&color); // Выбор второго цвета
         }
       }
       else {
@@ -207,8 +222,8 @@ void loop() {
 
       Gradient(color, color2);
     }
-    else if (mode == FireMode) {
-      if (ColorOrBrightness) {
+    else if (mode == FireMode) { // Режим иммитации пламени
+      if (ColorOrBrightness) { // Временное отключение анимации для выбора яркости
         SetBrightness(&brightness);
         strip.fill(mYellow);
         strip.show();
@@ -219,16 +234,19 @@ void loop() {
     }
   }
 
+  // Переключение в режим смены яркости
   if (encoder.click()) {
     Signal(mYellow);
     ColorOrBrightness = !ColorOrBrightness;
   }
 
+  // Переключение в меню выбора режимов
   if (encoder.hold()) {
     Signal(mGreen);
     modeSelect = !modeSelect; // Смена уровня режимов
   }
 
+  // Вкл/Выкл ленту
   if (digitalRead(5) != 1) {
     Signal();
     if (OnOff) {
