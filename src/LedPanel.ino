@@ -23,6 +23,102 @@ bool levelOfModes = 3; // Уровень режимов
 bool GradColorNum = 0; // Изменение разных цветов градиента
 bool modeSelect = 0; // Меню выбора режима
 
+void SetBrightness();
+void StaticColor();
+void Temperature();
+void Gradient();
+void Fire();
+void SetColor();
+void SetTemperature();
+void ModeSelect();
+void Signal();
+void Clear();
+
+void setup() {
+  encoder.setEncReverse(0);
+  encoder.setEncType(EB_STEP4_LOW); // Тип энкодера
+  Serial.begin(115200);
+  pinMode(5, 2);
+  Clear();
+}
+
+void loop() {
+  encoder.tick(); // Обработка энокдера
+  if (OnOff) { // Проверка включения ленты
+    if (modeSelect) { // Меню выбора режимов
+      ModeSelect(&mode);
+    }
+    else if (mode == StaticMode) { // Статичный цвет
+      if (!ColorOrBrightness) {
+        SetColor(&color);
+      }
+      else {
+        SetBrightness(&brightness);
+      }
+
+      StaticColor(color);
+    }
+    else if (mode == TemperatureMode) { // Холодный/Тёплый свет
+      if (!ColorOrBrightness) {
+        SetTemperature(&temp);
+      }
+      else {
+        SetBrightness(&brightness);
+      }
+
+      Temperature(temp);
+    }
+    else if (mode == GradientMode) { // Градиент
+      if (!ColorOrBrightness) {
+        if (encoder.pressing()) {
+          SetColor(&color2, 5); // Выбор первого цвета
+        }
+        else {
+          SetColor(&color); // Выбор второго цвета
+        }
+      }
+      else {
+        SetBrightness(&brightness);
+      }
+
+      Gradient(color, color2);
+    }
+    else if (mode == FireMode) { // Режим иммитации пламени
+      if (ColorOrBrightness) { // Временное отключение анимации для выбора яркости
+        SetBrightness(&brightness);
+        strip.fill(mYellow);
+        strip.show();
+      }
+      else {
+        Fire();
+      }
+    }
+  }
+
+  // Переключение в режим смены яркости
+  if (encoder.click()) {
+    Signal(mYellow);
+    ColorOrBrightness = !ColorOrBrightness;
+  }
+
+  // Переключение в меню выбора режимов
+  if (encoder.hold()) {
+    Signal(mGreen);
+    modeSelect = !modeSelect; // Смена уровня режимов
+  }
+
+  // Вкл/Выкл ленту
+  if (digitalRead(5) != 1) {
+    Signal();
+    if (OnOff) {
+      Clear();
+    }
+    OnOff = !OnOff;
+
+    delay(500);
+  }
+}
+
 // Статичный цвет
 void StaticColor(unsigned char color = 0) {
   strip.fill(mWheel8(color));
@@ -171,89 +267,4 @@ void Clear() {
   strip.fill(mBlack);
   strip.show();
   delay(1);
-}
-
-void setup() {
-  encoder.setEncReverse(0);
-  encoder.setEncType(EB_STEP4_LOW); // Тип энкодера
-  Serial.begin(115200);
-  pinMode(5, 2);
-  Clear();
-}
-
-void loop() {
-  encoder.tick(); // Обработка энокдера
-  if (OnOff) { // Проверка включения ленты
-    if (modeSelect) { // Меню выбора режимов
-      ModeSelect(&mode);
-    }
-    else if (mode == StaticMode) { // Статичный цвет
-      if (!ColorOrBrightness) {
-        SetColor(&color);
-      }
-      else {
-        SetBrightness(&brightness);
-      }
-
-      StaticColor(color);
-    }
-    else if (mode == TemperatureMode) { // Холодный/Тёплый свет
-      if (!ColorOrBrightness) {
-        SetTemperature(&temp);
-      }
-      else {
-        SetBrightness(&brightness);
-      }
-
-      Temperature(temp);
-    }
-    else if (mode == GradientMode) { // Градиент
-      if (!ColorOrBrightness) {
-        if (encoder.pressing()) {
-          SetColor(&color2, 5); // Выбор первого цвета
-        }
-        else {
-          SetColor(&color); // Выбор второго цвета
-        }
-      }
-      else {
-        SetBrightness(&brightness);
-      }
-
-      Gradient(color, color2);
-    }
-    else if (mode == FireMode) { // Режим иммитации пламени
-      if (ColorOrBrightness) { // Временное отключение анимации для выбора яркости
-        SetBrightness(&brightness);
-        strip.fill(mYellow);
-        strip.show();
-      }
-      else {
-        Fire();
-      }
-    }
-  }
-
-  // Переключение в режим смены яркости
-  if (encoder.click()) {
-    Signal(mYellow);
-    ColorOrBrightness = !ColorOrBrightness;
-  }
-
-  // Переключение в меню выбора режимов
-  if (encoder.hold()) {
-    Signal(mGreen);
-    modeSelect = !modeSelect; // Смена уровня режимов
-  }
-
-  // Вкл/Выкл ленту
-  if (digitalRead(5) != 1) {
-    Signal();
-    if (OnOff) {
-      Clear();
-    }
-    OnOff = !OnOff;
-
-    delay(500);
-  }
 }
