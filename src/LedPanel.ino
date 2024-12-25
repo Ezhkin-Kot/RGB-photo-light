@@ -22,16 +22,17 @@ bool OnOff = 0; // Вкл/Выкл ленту
 bool levelOfModes = 3; // Уровень режимов
 bool GradColorNum = 0; // Изменение разных цветов градиента
 bool modeSelect = 0; // Меню выбора режима
+int count = 0; // Переменная для анимации пламени
 
-void SetBrightness();
-void StaticColor();
-void Temperature();
-void Gradient();
+void StaticColor(unsigned char color = 0);
+void Temperature(int temp = 3500);
+void Gradient(unsigned char color1, unsigned char color2);
 void Fire();
-void SetColor();
-void SetTemperature();
-void ModeSelect();
-void Signal();
+void SetBrightness(unsigned char *brightness);
+void SetColor(unsigned char *color, int speed = 1);
+void SetTemperature(int *temp);
+void ModeSelect(unsigned char *mode);
+void Signal(enum COLORS color = mWhite);
 void Clear();
 
 void setup() {
