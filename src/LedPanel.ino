@@ -122,6 +122,7 @@ void loop() {
 
 // Статичный цвет
 void StaticColor(unsigned char color = 0) {
+  strip.setBrightness(brightness);
   strip.fill(mWheel8(color));
   strip.show();
   delay(1);
@@ -129,6 +130,7 @@ void StaticColor(unsigned char color = 0) {
 
 // Холодный/Тёплый свет
 void Temperature(int temp = 3500) {
+  strip.setBrightness(brightness);
   strip.fill(mKelvin(temp));
   strip.show();
   Serial.println(temp);
@@ -137,6 +139,7 @@ void Temperature(int temp = 3500) {
 
 // Градиент
 void Gradient(unsigned char color1, unsigned char color2) {
+  strip.setBrightness(brightness);
   strip.fillGradient(0, NUMLEDS/2, mWheel8(color1), mWheel8(color2)); // Заливка первого ряда ленты
   strip.fillGradient(NUMLEDS/2, NUMLEDS, mWheel8(color2), mWheel8(color1)); // Заливка второго ряда ленты
   strip.show();
@@ -147,7 +150,6 @@ void Gradient(unsigned char color1, unsigned char color2) {
 }
 
 // Режим иммитации пламени
-int count = 0;
 void Fire() {
   strip.setBrightness(brightness);
   mGradient<4> myGrad; // Палитра градиента из 4 точек
